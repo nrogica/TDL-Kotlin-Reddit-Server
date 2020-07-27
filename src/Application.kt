@@ -1,5 +1,7 @@
 package com.example.fiubaredditserver
 
+import com.example.fiubaredditserver.dao.CommentDAO
+import com.example.fiubaredditserver.dao.PostDAO
 import com.example.fiubaredditserver.model.Post
 import com.example.fiubaredditserver.model.User
 import io.ktor.application.*
@@ -12,6 +14,9 @@ import io.ktor.features.*
 import io.ktor.locations.*
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.transactions.transaction
+
 
 @Location("/post")
 class PostLocation()
@@ -22,8 +27,18 @@ class Vote(val action: String,val id: Int)
 @Location("/post/edit/{id}/{content}/{value}")
 class EditPost(val id: Int, val content: String, val value:String)
 
+@Location("/post/addcomment/{postId}")
+class AddComent(val postId: Int)
+
+@Location("/comments")
+class GetComments()
+
+
+
 fun main(args: Array<String>) {
-    val server = embeddedServer(
+
+
+        val server = embeddedServer(
         Netty,
         watchPaths = listOf("server"),
         module = Application::serverModule,
@@ -34,6 +49,22 @@ fun main(args: Array<String>) {
 
 @Suppress("unused") // Referenced in application.conf
 fun Application.serverModule() {
+    Database.connect("jdbc:h2:mem:regular;DB_CLOSE_DELAY=-1;", "org.h2.Driver")
+
+    transaction {
+        addLogger(StdOutSqlLogger)
+
+        SchemaUtils.create(PostDAO,CommentDAO)
+        PostDAO.insert {
+            it[title] = "p1"
+            it[text] = "hola"
+            it[score] = 0
+        }
+    }
+
+    //SchemaUtils.drop(PostDAO)
+
+
     install(Locations)
 
     install(ContentNegotiation) {

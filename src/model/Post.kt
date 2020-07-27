@@ -1,18 +1,14 @@
 package com.example.fiubaredditserver.model
 
 data class Post(
-        //var author: User,
+    //var author: User,
+    var postId : Int,
     var title: String?,
     var text: String?,
     var image: String
 ) {
-    //TODO sacar el companion object una vez implementada la persistencia
-    companion object {
-        var postId = 1
-    }
     var score: Long = 0
-    val comments: ArrayList<Post> = ArrayList<Post>()
-    var id = postId++
+    val comments: ArrayList<Comment> = ArrayList<Comment>()
 
     fun vote(action: String) {
         when (action) {
@@ -20,5 +16,19 @@ data class Post(
             "downvote" -> { score-- }
             }
         }
+
+    fun addComments(commentsToAdd : List<Comment>) {
+        if (comments.isEmpty()) {
+            comments.addAll(commentsToAdd)
+        } else {
+            commentsToAdd.map { comments.addIfNotExists(it) }
+        }
+    }
+
+    fun ArrayList<Comment>.addIfNotExists(comment: Comment) {
+        if (comment !in this) {
+            this.add(comment)
+        }
+    }
 }
 
