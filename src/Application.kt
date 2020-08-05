@@ -2,8 +2,9 @@ package com.example.fiubaredditserver
 
 import com.example.fiubaredditserver.dao.CommentDAO
 import com.example.fiubaredditserver.dao.PostDAO
-import com.example.fiubaredditserver.model.Post
 import com.example.fiubaredditserver.model.User
+import com.example.fiubaredditserver.service.CommentService
+import com.example.fiubaredditserver.service.PostService
 import io.ktor.application.*
 import io.ktor.response.*
 import io.ktor.request.*
@@ -51,6 +52,9 @@ fun main(args: Array<String>) {
 fun Application.serverModule() {
     Database.connect("jdbc:h2:mem:regular;DB_CLOSE_DELAY=-1;", "org.h2.Driver")
 
+
+
+
     transaction {
         addLogger(StdOutSqlLogger)
 
@@ -74,9 +78,10 @@ fun Application.serverModule() {
     }
 
     val users = mutableListOf<User>()
-    val posts = mutableListOf<Post>()
+    val postService = PostService()
+    val commentService = CommentService()
     routing {
-        postLocation(posts)
+        postLocation(postService, commentService)
 
         route ("/") {
             get {

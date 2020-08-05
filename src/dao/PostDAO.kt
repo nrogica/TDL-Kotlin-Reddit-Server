@@ -1,6 +1,4 @@
 package com.example.fiubaredditserver.dao
-
-import com.example.fiubaredditserver.model.Comment
 import org.jetbrains.exposed.sql.Table
 
 

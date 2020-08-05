@@ -4,6 +4,8 @@ import com.example.fiubaredditserver.dao.CommentDAO
 import com.example.fiubaredditserver.dao.PostDAO
 import com.example.fiubaredditserver.model.Comment
 import com.example.fiubaredditserver.model.Post
+import com.example.fiubaredditserver.service.CommentService
+import com.example.fiubaredditserver.service.PostService
 import io.ktor.application.ApplicationCall
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
@@ -14,7 +16,6 @@ import io.ktor.locations.put
 import io.ktor.request.receive
 import io.ktor.response.respond
 import io.ktor.routing.Route
-import javafx.geometry.Pos
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
@@ -24,7 +25,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 
 suspend fun toPost(row: ResultRow) : Post {
-    var newPost = Post(row[PostDAO.postId], row[PostDAO.title], row[PostDAO.text], "asdaurl")
+    var newPost = Post(row[PostDAO.postId], row[PostDAO.title], row[PostDAO.text], "")
     val comments = getCommentsForPostId(newPost.postId)
     newPost.addComments(comments)
     return newPost
@@ -44,42 +45,29 @@ suspend fun getCommentsForPostId (postId : Int) : List<Comment> = newSuspendedTr
     CommentDAO.select { CommentDAO.postId eq postId }.map { toComment(it)}
 }
 
-suspend fun getAllPosts() : List<Post> = newSuspendedTransaction {
-    PostDAO.selectAll().map { toPost(it) }
-}
-
-suspend fun getAllComments() : List<Comment> = newSuspendedTransaction {
-    CommentDAO.selectAll().map { toComment(it) }
-}
-
-suspend fun getPost(postId: Int) : Post = newSuspendedTransaction {
-    var query = PostDAO.select { PostDAO.postId eq postId }
-    query.map { toPost(it) }.first()
-}
-
-fun Route.postLocation(posts: MutableList<Post>) {
+fun Route.postLocation(postService: PostService, commentService: CommentService) {
 
     get<PostLocation> {
 
-        call.respond(getAllPosts())
+        //call.respond(getAllPosts())
+        call.respond(postService.getAllPosts())
     }
 
     get<GetComments> {
-        call.respond(getAllComments())
+        //call.respond(getAllComments())
+        call.respond(commentService.getAllComments())
     }
 
     post<PostLocation> {
         val parameters = call.receive<Parameters>()
 
-        val title = parameters["title"]
-        val text = parameters["text"]
-        val image = parameters["image"]
+        val title = parameters["title"].orEmpty()
+        val text = parameters["text"].orEmpty()
+        val image = parameters["image"].orEmpty()
 
         checkParameters(call, title, text,image)
-
-        val newPost  = Post(1,title,text, image!!)
-        posts.add(newPost)
-        call.respond(HttpStatusCode.OK,"Post creado con id: ${newPost.postId}")
+        postService.addPost(title, text, image)
+        call.respond(HttpStatusCode.OK,"Post creado")
     }
 
     post<AddComent> {
@@ -88,27 +76,8 @@ fun Route.postLocation(posts: MutableList<Post>) {
         val pid = it.postId
         val ntext : String = parameters["text"].orEmpty()
         val nimage = parameters["image"].orEmpty()
-
-        transaction {
-            CommentDAO.insert {
-                it[postId] = pid.toInt()
-                it[text] = ntext
-                it[image] = nimage
-            }
-        }
-
+        commentService.addComment(pid, ntext, nimage)
         call.respond(HttpStatusCode.OK,"Se agrega comentario para el Post con id: ${pid}")
-        //val newComment = Comment(postId.toInt(), "",text,image)
-
-
-
-
-
-
-        /*        val postId: Int,
-        val userName: String,
-        var text: String?,
-        var image: String?*/
     }
 
     put<Vote> {
@@ -123,10 +92,11 @@ fun Route.postLocation(posts: MutableList<Post>) {
                 call.respond(HttpStatusCode.BadRequest,"$action no es una accion valida para votar")
             }
 
-            var post = posts.firstOrNull { actual -> actual.postId == postId}
+            //var post = posts.firstOrNull { actual -> actual.postId == postId}
+            var post = postService.getPostById(postId)
 
             if (post != null) {
-                post.vote(action.toLowerCase())
+                postService.vote(post, action.toLowerCase())
                 call.respond(HttpStatusCode.OK,"ok")
             } else {
                 call.respond(HttpStatusCode.NotFound, postNotFoundMessage(postId))
@@ -134,6 +104,8 @@ fun Route.postLocation(posts: MutableList<Post>) {
 
         }
     }
+/*
+
     put<EditPost> {
             edit -> run {
         val postId = edit.id
@@ -158,7 +130,7 @@ fun Route.postLocation(posts: MutableList<Post>) {
         }
         }
     }
-
+*/
 }
 
 fun isValidContent(content: String): Boolean {
@@ -187,5 +159,8 @@ suspend fun checkParameters(
     if (image.isNullOrBlank()) {
         call.respond(HttpStatusCode.BadRequest,"Error en parametro url")
     }
+
+
+
 }
 
