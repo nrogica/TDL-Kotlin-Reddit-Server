@@ -5,7 +5,6 @@ import com.example.fiubaredditserver.dao.PostDAO
 import com.example.fiubaredditserver.model.Comment
 import com.example.fiubaredditserver.model.Post
 import com.example.fiubaredditserver.toComment
-import javafx.geometry.Pos
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction

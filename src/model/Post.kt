@@ -1,7 +1,5 @@
 package com.example.fiubaredditserver.model
 
-import org.omg.CORBA.OBJECT_NOT_EXIST
-
 data class Post(
     //var author: User,
     var postId : Int,
@@ -11,39 +9,23 @@ data class Post(
     var score: Int = 0
 ) {
 
-    val comments: ArrayList<Comment> = ArrayList<Comment>()
-
-    fun vote(action: String) {
-        when (action) {
-            "upvote" -> { score++ }
-            "downvote" -> { score-- }
-            }
-        }
+    //val comments: ArrayList<Comment> = ArrayList<Comment>()
+    val comments: CommentListWrapper = CommentListWrapper()
 
     fun addComments(commentsToAdd : List<Comment>) {
-        if (comments.isEmpty()) {
-            comments.addAll(commentsToAdd)
-        } else {
-            commentsToAdd.map { comments.addIfNotExists(it) }
-        }
+        //commentsToAdd.map { comments.addIfNotExists(it) }
+        commentsToAdd.map { comment -> comments.addIfNotExistsOrEmpty(comment) }
     }
 
-    fun ArrayList<Comment>.addIfNotExists(comment : Comment) {
+    /*fun ArrayList<Comment>.addIfNotExists(comment : Comment) {
         if (comment in this) {
             this.add(comment)
         }
-    }
-
-
-
-
-
-
-
-
-
-
+    }*/
 
 
 }
+
+
+
 
